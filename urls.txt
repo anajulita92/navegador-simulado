@@ -1,2 +1,5 @@
+www.ifpb.edu.br
+www.google.com.br
+www.apple.com
+http://example.com
 https://www.python.org
-https://www.wikipedia.org

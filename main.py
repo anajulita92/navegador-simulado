@@ -1,62 +1,68 @@
 from cadastro_urls import CadastroURLs
 from navegador import Navegador
 
+def exibir_interface(navegador):
+    hist_str = navegador.obter_historico_formatado()
+    home_str = f"[{navegador.pagina_atual}]" if navegador.pagina_atual else "[]"
+    
+    print("-" * 50)
+    print(f"Histórico de Visitas: {hist_str if hist_str else '[]'}")
+    print(f"Home: {home_str}")
+    print("Digite a url ou #back para retornar à última página visitada.")
 
-cadastro = CadastroURLs()
-cadastro.carregar_arquivo("urls.txt")
-navegador = Navegador(cadastro)
+def main():
+    cadastro = CadastroURLs()
+    cadastro.carregar_arquivo("urls.txt")
+    navegador = Navegador(cadastro)
 
-print("Navegador simulado")
-print("Digite uma URL para acessar.")
-print("Comandos: #add <url>, #back, #showhist e #sair")
+    mensagem_status = None
 
-while True:
-    print()
-    print("Página atual:", navegador.pagina_atual)
-    entrada = input("URL ou comando: ").strip()
+    while True:
+        exibir_interface(navegador)
+        
+        if mensagem_status:
+            print()
+            print(mensagem_status)
+            mensagem_status = None
 
-    try:
+        entrada = input("url: ").strip()
+
         if entrada == "":
-            print("Digite uma URL ou um comando.")
+            continue
 
-        elif entrada == "#sair":
-            print("Programa encerrado.")
+        if entrada == "#sair":
+            print("Encerrando o navegador...")
             break
 
         elif entrada == "#back":
             pagina = navegador.voltar()
-
             if pagina is None:
-                print("Não há página anterior.")
-            else:
-                print("Retornou para:", pagina)
+                mensagem_status = "Não há páginas anteriores no histórico."
 
         elif entrada == "#showhist":
-            print("Página atual:", navegador.pagina_atual)
-            historico = navegador.listar_historico()
+            hist = navegador.obter_historico_formatado()
+            print(f"\nHistórico: {hist if hist else '[]'}\n")
 
-            if len(historico) == 0:
-                print("Histórico vazio.")
+        elif entrada.startswith("#add"):
+            nova_url = entrada[4:].strip()
+            if nova_url == "":
+                mensagem_status = "Erro: Use o formato #add <url>"
             else:
-                print("Histórico, do mais recente para o mais antigo:")
-                for url in historico:
-                    print(url)
+                try:
+                    cadastro.adicionar(nova_url)
+                    mensagem_status = f"URL '{nova_url}' cadastrada com sucesso!"
+                except ValueError as erro:
+                    mensagem_status = f"Erro ao cadastrar: {erro}"
 
-        elif entrada == "#add" or entrada[:5] == "#add ":
-            url = entrada[4:].strip()
-
-            if url == "":
-                print("Use: #add <url>")
-            else:
-                cadastro.adicionar(url)
-                print("URL cadastrada.")
-
-        elif entrada[0] == "#":
-            print("Comando desconhecido.")
+        elif entrada.startswith("#"):
+            mensagem_status = "Comando desconhecido."
 
         else:
-            navegador.acessar(entrada)
-            print("Página encontrada!")
+            try:
+                navegador.acessar(entrada)
+                mensagem_status = "Página encontrada!"
+            except ValueError as erro:
+                mensagem_status = str(erro)
 
-    except ValueError as erro:
-        print(f"Erro: {erro}")
+if __name__ == "__main__":
+    main()
