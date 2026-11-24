@@ -4,11 +4,12 @@ from navegador import Navegador
 
 def exibir_interface(navegador):
     historico = navegador.obter_historico_formatado()
-    pagina = navegador.pagina_atual or "Nenhuma página acessada"
+    pagina = navegador.pagina_atual or "[]"
 
     print("\n" + "=" * 60)
-    print(f"Histórico de visitas: {historico or '[]'}")
-    print(f"Página atual: {pagina}")
+    print(f"Histórico de Visitas: {historico or '[]'}")
+    print(f"Home: [{pagina}]" if navegador.pagina_atual else "Home: []")
+    print("Digite uma URL, um caminho interno iniciado por / ou um comando #.")
     print("=" * 60)
 
 
@@ -16,24 +17,31 @@ def exibir_ajuda():
     print("""
 COMANDOS DO NAVEGADOR SIMULADO
 
-  endereço completo       Acessa um domínio ou página cadastrada.
-  /caminho                Acessa uma página interna do domínio atual.
-  #add <endereço>         Cadastra um domínio ou página interna.
-  #back                   Volta à página anterior.
-  #showhist               Exibe o histórico de navegação.
-  #help                   Exibe esta ajuda.
-  #sair                   Encerra o navegador.
+  #add <url>     Cadastra um domínio ou uma página interna.
+                 Depois, informe o conteúdo que ficará no arquivo .txt.
+  #back          Retorna à página visitada imediatamente antes.
+  #showhist      Exibe o histórico de páginas visitadas.
+  #help          Exibe esta ajuda.
+  #sair          Encerra o navegador.
 
-Exemplo:
-  www.ifpb.edu.br
-  /cursos
-  /redes
+NAVEGAÇÃO
+
+  www.ifpb.edu.br       Acessa um domínio cadastrado.
+  /tsi                  Acessa um link interno da página atual.
+  /professores          A partir de /tsi, acessa /tsi/professores.
+
+Digite somente links internos que estejam listados na página atual.
 """)
 
 
 def main():
     cadastro = CadastroURLs()
-    cadastro.carregar_arquivo("urls.txt")
+    try:
+        cadastro.carregar_arquivo("urls.txt")
+    except OSError as erro:
+        print(f"Não foi possível carregar o cadastro inicial: {erro}")
+        return
+
     navegador = Navegador(cadastro)
 
     print("NAVEGADOR SIMULADO - CHECKPOINT 2")
@@ -54,30 +62,25 @@ def main():
         if entrada == "#sair":
             print("Encerrando o navegador...")
             break
-
         if entrada == "#help":
             exibir_ajuda()
             continue
-
         if entrada == "#showhist":
             print("Histórico:", navegador.obter_historico_formatado() or "[]")
             continue
-
         if entrada == "#back":
             anterior = navegador.voltar()
             if anterior is None:
                 print("Não há páginas anteriores no histórico.")
             else:
-                print(f"Retornou para: {anterior}")
                 navegador.exibir_pagina_atual()
             continue
 
-        if entrada.startswith("#add"):
+        if entrada == "#add" or entrada.startswith("#add "):
             endereco = entrada[4:].strip()
             if not endereco:
-                print("Uso: #add <endereço>")
+                print("Uso: #add <url>")
                 continue
-
             try:
                 conteudo = input("Conteúdo da nova página: ")
                 pagina = cadastro.adicionar(endereco, conteudo)

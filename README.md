@@ -1,65 +1,67 @@
 # Navegador Simulado — Checkpoint 2
 
-Projeto acadêmico em Python para simular a navegação entre domínios e páginas internas, sem realizar requisições HTTP reais.
+Projeto acadêmico em Python para simular a navegação entre domínios e páginas internas. O programa não realiza requisições HTTP reais: cada página é representada por um arquivo de texto local.
 
 ## Requisitos
 
 - Python 3.9 ou superior.
-- Nenhuma biblioteca externa é necessária.
+- Nenhuma biblioteca externa.
 
 ## Como executar
 
-Na pasta do projeto, execute:
+Na pasta do projeto:
 
 ```bash
 python main.py
 ```
 
-O programa carrega os domínios de `urls.txt` e lê o conteúdo das páginas nos arquivos `.txt` dentro de `paginas/`.
-
 ## Comandos
 
 | Comando | Função |
 |---|---|
-| endereço completo | Acessa um domínio ou página cadastrada |
-| `/caminho` | Acessa uma página interna a partir da página atual |
-| `#add <endereço>` | Cadastra um domínio ou página e solicita o conteúdo |
-| `#back` | Retorna à página anterior |
+| `#add <url>` | Cadastra um domínio ou página interna e solicita seu conteúdo |
+| `#back` | Retorna à página visitada anteriormente |
 | `#showhist` | Exibe o histórico |
-| `#help` | Exibe a ajuda |
+| `#help` | Exibe a ajuda dos comandos |
 | `#sair` | Encerra o programa |
 
-## Estrutura dos arquivos
+Para navegar, digite um endereço completo cadastrado ou um caminho iniciado por `/`. Exemplo: depois de acessar `www.ifpb.edu.br`, digite `/tsi`; dentro de TSI, digite `/professores`.
+
+## Estrutura do projeto
 
 - `main.py`: interface de terminal e interpretação dos comandos.
-- `cadastro_urls.py`: validação, cadastro e persistência dos endereços.
+- `cadastro_urls.py`: validação, cadastro e persistência.
 - `estrutura_web.py`: árvore de domínios e páginas internas.
-- `navegador.py`: navegação, resolução de caminhos, leitura e exibição das páginas.
+- `navegador.py`: navegação, leitura e exibição das páginas.
 - `historico.py`: pilha encadeada de páginas visitadas.
-- `urls.txt`: lista de domínios e páginas iniciais.
-- `paginas/`: conteúdo das páginas, um arquivo `index.txt` por endereço.
+- `urls.txt`: cadastro inicial de URLs.
+- `paginas/`: arquivos `index.txt` associados às URLs.
 - `testes/`: testes automatizados.
 
-## Como funciona a navegação interna
+## Estrutura de dados
 
-Depois de acessar `www.ifpb.edu.br`, digite `/cursos`. O navegador resolve o caminho para `www.ifpb.edu.br/cursos`. A partir dessa página, `/redes` resolve para `www.ifpb.edu.br/cursos/redes`.
+A classe `EstruturaWeb` usa uma árvore de dicionários. Cada domínio é uma raiz; cada caminho interno é um nó filho. A busca percorre somente os segmentos informados. Cada página pode apresentar no máximo dois links internos, conforme o modelo do enunciado.
 
-Os caminhos são acrescentados ao caminho da página atual. O comando `#back` retorna à página anterior.
+Nós intermediários criados para formar caminhos não são considerados páginas válidas até receberem um arquivo associado.
 
-## Cadastro de páginas
+## Arquivos de conteúdo
 
-Use `#add www.exemplo.com/secao`. O programa solicita o texto da página, cria o arquivo correspondente dentro de `paginas/` e atualiza `urls.txt`. Os cadastros permanecem salvos para as próximas execuções.
+Cada URL cadastrada possui um arquivo `index.txt` dentro da pasta `paginas/`. Ao acessar uma URL, o programa exibe o endereço, o conteúdo do arquivo e os links internos cadastrados naquela página.
+
+## Cadastro manual
+
+Digite, por exemplo:
+
+```text
+#add www.exemplo.com/contato
+```
+
+Depois, informe o conteúdo da página. O programa cria o arquivo local e atualiza `urls.txt`.
 
 ## Testes
-
-Execute:
 
 ```bash
 python -m unittest discover -s testes -v
 ```
 
-Os testes verificam o acesso ao domínio, navegação interna, leitura de arquivo, erro 404 sem alteração do estado e retorno pelo histórico.
-
-## Observações
-
-O projeto é um navegador simulado. Ele não acessa a internet nem interpreta HTML; cada página é representada por um arquivo de texto local.
+Os testes cobrem a árvore, o limite de dois links por página, caminhos com acentos, navegação interna, histórico, arquivos e erros 404.

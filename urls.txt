@@ -1,4 +1,10 @@
 www.ifpb.edu.br
+www.ifpb.edu.br/tsi
+www.ifpb.edu.br/tsi/professores
+www.ifpb.edu.br/tsi/alunos
+www.ifpb.edu.br/rc
+www.ifpb.edu.br/rc/coordenação
+www.ifpb.edu.br/rc/coordenação/matriz_curricular
 www.google.com.br
 www.apple.com
 example.com

@@ -5,6 +5,8 @@ from estrutura_web import EstruturaWeb
 
 
 class Navegador:
+    """Controla a página atual, a navegação e o histórico."""
+
     def __init__(self, cadastro):
         self.__cadastro = cadastro
         self.__historico = Historico()
@@ -15,19 +17,23 @@ class Navegador:
         return self.__pagina_atual
 
     def _resolver_endereco(self, url):
+        if not isinstance(url, str) or not url.strip():
+            raise ValueError("Digite um endereço.")
+
         entrada = url.strip()
         if entrada.startswith("/"):
             if self.__pagina_atual is None:
                 raise ValueError("Acesse um domínio antes de navegar para uma página interna.")
+            if entrada == "/":
+                dominio, _ = EstruturaWeb.separar_url(self.__pagina_atual)
+                return dominio
+            if entrada.startswith("//") or entrada.endswith("/") or "//" in entrada:
+                raise ValueError("Caminho interno inválido.")
 
             dominio, caminhos_atuais = EstruturaWeb.separar_url(self.__pagina_atual)
-            novo_caminho = entrada.strip("/")
-            if not novo_caminho:
-                return dominio
-
             prefixo = "/".join(caminhos_atuais)
-            caminho_completo = "/".join(parte for parte in (prefixo, novo_caminho) if parte)
-            return dominio + ("/" + caminho_completo if caminho_completo else "")
+            caminho_completo = "/".join(parte for parte in (prefixo, entrada[1:]) if parte)
+            return dominio + "/" + caminho_completo
 
         return self.__cadastro.normalizar_url(entrada)
 
@@ -60,14 +66,18 @@ class Navegador:
             return
 
         arquivo = self.__cadastro.obter_arquivo(self.__pagina_atual)
-        if arquivo is None:
+        if arquivo is None or not Path(arquivo).is_file():
             print("Erro 404: arquivo da página não encontrado.")
             return
 
         conteudo = Path(arquivo).read_text(encoding="utf-8")
         print("\n" + "-" * 50)
+        print(f"url: {self.__pagina_atual}")
         print(conteudo.rstrip())
+
         links = self.__cadastro.obter_links(self.__pagina_atual)
         if links:
-            print("\nLinks internos disponíveis:", ", ".join(links))
+            print("\nLinks disponíveis:")
+            for link in links:
+                print(link)
         print("-" * 50)

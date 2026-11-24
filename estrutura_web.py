@@ -1,5 +1,5 @@
 class NoPagina:
-    """Nó da árvore que representa uma página da web simulada."""
+    """Nó da árvore que representa um domínio ou uma página interna."""
 
     def __init__(self):
         self.filhos = {}
@@ -7,7 +7,9 @@ class NoPagina:
 
 
 class EstruturaWeb:
-    """Organiza domínios e páginas internas em uma árvore de dicionários."""
+    """Árvore de domínios e páginas, com no máximo dois links por página."""
+
+    LIMITE_LINKS = 2
 
     def __init__(self):
         self.__dominios = {}
@@ -18,15 +20,20 @@ class EstruturaWeb:
             raise ValueError("A URL não pode estar vazia.")
 
         endereco = url.strip()
-        if endereco.startswith("https://"):
+        esquema = endereco.lower()
+        if esquema.startswith("https://"):
             endereco = endereco[8:]
-        elif endereco.startswith("http://"):
+        elif esquema.startswith("http://"):
             endereco = endereco[7:]
 
-        if "://" in endereco or "?" in endereco or "#" in endereco:
-            raise ValueError("Protocolo, parâmetros ou fragmentos inválidos.")
+        if "://" in endereco or any(c in endereco for c in "?#\\"):
+            raise ValueError("Protocolo, parâmetros, fragmentos ou barras inválidos.")
 
-        endereco = endereco.rstrip("/")
+        if endereco.endswith("/"):
+            endereco = endereco[:-1]
+        if not endereco or endereco.endswith("/"):
+            raise ValueError("A URL contém um caminho vazio.")
+
         partes = endereco.split("/")
         dominio = partes[0].lower()
         caminhos = partes[1:]
@@ -35,22 +42,45 @@ class EstruturaWeb:
             raise ValueError("Domínio ou caminho interno inválido.")
 
         for parte in caminhos:
-            if parte in (".", "..") or "\\" in parte:
+            if parte in (".", ".."):
                 raise ValueError("Caminho interno inválido.")
-            if not all(c.isascii() and (c.isalnum() or c in "-_.") for c in parte):
+            if not all(c.isalnum() or c in "-_." for c in parte):
                 raise ValueError("O caminho contém caracteres não permitidos.")
 
         return dominio, caminhos
 
+    def validar_cadastro(self, url):
+        """Verifica o limite de ramificações sem alterar a árvore."""
+        dominio, caminhos = self.separar_url(url)
+        atual = self.__dominios.get(dominio)
+
+        if atual is None:
+            return True
+
+        for caminho in caminhos:
+            proximo = atual.filhos.get(caminho)
+            if proximo is None:
+                if len(atual.filhos) >= self.LIMITE_LINKS:
+                    raise ValueError(
+                        f"Cada página pode ter no máximo {self.LIMITE_LINKS} links internos."
+                    )
+                return True
+            atual = proximo
+
+        return True
+
     def cadastrar(self, url, arquivo=None):
         dominio, caminhos = self.separar_url(url)
+        self.validar_cadastro(url)
 
         if dominio not in self.__dominios:
             self.__dominios[dominio] = NoPagina()
 
         atual = self.__dominios[dominio]
         for caminho in caminhos:
-            atual = atual.filhos.setdefault(caminho, NoPagina())
+            if caminho not in atual.filhos:
+                atual.filhos[caminho] = NoPagina()
+            atual = atual.filhos[caminho]
 
         if arquivo is not None:
             atual.arquivo = arquivo
@@ -72,7 +102,11 @@ class EstruturaWeb:
         pagina = self.buscar(url)
         if pagina is None:
             return []
-        return ["/" + nome for nome in sorted(pagina.filhos)]
+        return [
+            "/" + nome
+            for nome, filho in sorted(pagina.filhos.items())
+            if filho.arquivo is not None
+        ]
 
     def obter_arquivo(self, url):
         pagina = self.buscar(url)

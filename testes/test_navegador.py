@@ -28,12 +28,39 @@ class TesteNavegador(unittest.TestCase):
         self.navegador.acessar("www.exemplo.com")
         self.assertEqual(self.navegador.acessar("/secao"), "www.exemplo.com/secao")
 
+    def test_navegacao_aninhada(self):
+        self.cadastro.adicionar("www.exemplo.com/secao", "Seção")
+        self.cadastro.adicionar("www.exemplo.com/secao/detalhes", "Detalhes")
+        self.navegador.acessar("www.exemplo.com")
+        self.navegador.acessar("/secao")
+        self.assertEqual(
+            self.navegador.acessar("/detalhes"),
+            "www.exemplo.com/secao/detalhes"
+        )
+
     def test_arquivo_da_pagina(self):
         self.cadastro.adicionar("www.exemplo.com/secao", "Texto de teste")
+        caminho = self.cadastro.obter_arquivo("www.exemplo.com/secao")
+        self.assertEqual(Path(caminho).read_text(encoding="utf-8").strip(), "Texto de teste")
+
+    def test_links_disponiveis(self):
+        self.cadastro.adicionar("www.exemplo.com/um", "Um")
+        self.cadastro.adicionar("www.exemplo.com/dois", "Dois")
         self.assertEqual(
-            Path(self.cadastro.obter_arquivo("www.exemplo.com/secao")).read_text(encoding="utf-8").strip(),
-            "Texto de teste"
+            self.cadastro.obter_links("www.exemplo.com"),
+            ["/dois", "/um"]
         )
+
+    def test_terceiro_link_e_rejeitado(self):
+        self.cadastro.adicionar("www.exemplo.com/um", "Um")
+        self.cadastro.adicionar("www.exemplo.com/dois", "Dois")
+        with self.assertRaises(ValueError):
+            self.cadastro.adicionar("www.exemplo.com/tres", "Três")
+
+    def test_caminho_com_acento(self):
+        pagina = self.cadastro.adicionar("www.exemplo.com/coordenação", "Coordenação")
+        self.assertEqual(pagina, "www.exemplo.com/coordenação")
+        self.assertTrue(self.cadastro.esta_cadastrada(pagina))
 
     def test_erro_404_nao_altera_estado(self):
         self.navegador.acessar("www.exemplo.com")

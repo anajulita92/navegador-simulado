@@ -1,4 +1,0 @@
-Cursos do IFPB
-
-Nesta página simulada estão listadas informações sobre cursos.
-Acesse /redes para consultar o curso de Redes de Computadores.

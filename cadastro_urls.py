@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 from estrutura_web import EstruturaWeb
 
@@ -18,14 +17,19 @@ class CadastroURLs:
         return dominio + ("/" + "/".join(caminhos) if caminhos else "")
 
     def validar_url(self, url):
-        dominio, caminhos = EstruturaWeb.separar_url(url)
+        dominio, _ = EstruturaWeb.separar_url(url)
+        if len(dominio) > 253:
+            raise ValueError("O domínio é muito longo.")
+
         partes = dominio.split(".")
         if len(partes) < 2:
             raise ValueError("O domínio deve possuir partes separadas por ponto.")
 
         for parte in partes:
-            if not parte or parte.startswith("-") or parte.endswith("-"):
+            if not parte or len(parte) > 63:
                 raise ValueError("Parte inválida no domínio.")
+            if parte.startswith("-") or parte.endswith("-"):
+                raise ValueError("Uma parte do domínio não pode começar ou terminar com hífen.")
             if not all(c.isascii() and (c.isalnum() or c == "-") for c in parte):
                 raise ValueError("O domínio contém caracteres inválidos.")
         return True
@@ -39,7 +43,8 @@ class CadastroURLs:
 
     def esta_cadastrada(self, url):
         try:
-            return self.__estrutura.buscar(url) is not None
+            arquivo = self.__estrutura.obter_arquivo(url)
+            return arquivo is not None and Path(arquivo).is_file()
         except ValueError:
             return False
 
@@ -50,15 +55,22 @@ class CadastroURLs:
         if normalizada in self.__urls:
             raise ValueError("A URL já está cadastrada.")
 
+        self.__estrutura.validar_cadastro(normalizada)
         arquivo = self._caminho_arquivo(normalizada)
-        arquivo.parent.mkdir(parents=True, exist_ok=True)
         if arquivo.exists():
             raise ValueError("Já existe um arquivo para essa página.")
 
-        arquivo.write_text(conteudo.rstrip() + "\n", encoding="utf-8")
-        self.__estrutura.cadastrar(normalizada, str(arquivo))
-        self.__urls.add(normalizada)
-        self._salvar_urls()
+        arquivo.parent.mkdir(parents=True, exist_ok=True)
+        arquivo.write_text(str(conteudo).rstrip() + "\n", encoding="utf-8")
+
+        try:
+            self.__estrutura.cadastrar(normalizada, str(arquivo))
+            self.__urls.add(normalizada)
+            self._salvar_urls()
+        except Exception:
+            arquivo.unlink(missing_ok=True)
+            raise
+
         return normalizada
 
     def carregar_arquivo(self, caminho=None):
@@ -76,6 +88,7 @@ class CadastroURLs:
                 if normalizada in self.__urls:
                     continue
 
+                self.__estrutura.validar_cadastro(normalizada)
                 arquivo = self._caminho_arquivo(normalizada)
                 arquivo.parent.mkdir(parents=True, exist_ok=True)
                 if not arquivo.exists():
@@ -83,12 +96,14 @@ class CadastroURLs:
                         f"Bem-vindo à página simulada {normalizada}.\n",
                         encoding="utf-8"
                     )
+
                 self.__estrutura.cadastrar(normalizada, str(arquivo))
                 self.__urls.add(normalizada)
-            except ValueError as erro:
+            except (ValueError, OSError) as erro:
                 print(f"Linha {numero} ignorada em {origem}: {erro}")
 
     def _salvar_urls(self):
+        self.__arquivo_urls.parent.mkdir(parents=True, exist_ok=True)
         self.__arquivo_urls.write_text(
             "".join(url + "\n" for url in sorted(self.__urls)),
             encoding="utf-8"
