@@ -1,0 +1,3 @@
+Página inicial simulada da Apple.
+
+Conteúdo demonstrativo armazenado em um arquivo de texto local.

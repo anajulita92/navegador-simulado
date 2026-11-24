@@ -1,0 +1,4 @@
+Python
+
+Página inicial simulada do Python.
+Conteúdo demonstrativo para o navegador acadêmico.

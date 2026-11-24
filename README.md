@@ -1,47 +1,65 @@
-# Navegador Simulado (Checkpoint 1)
+# Navegador Simulado — Checkpoint 2
 
-Projeto desenvolvido para a disciplina de **Programação e Estrutura de Dados** do IFPB (Curso de Redes de Computadores), ministrada pelo Prof. Wallennon Germano.
+Projeto acadêmico em Python para simular a navegação entre domínios e páginas internas, sem realizar requisições HTTP reais.
+
+## Requisitos
+
+- Python 3.9 ou superior.
+- Nenhuma biblioteca externa é necessária.
 
 ## Como executar
 
-É necessário ter o Python 3 instalado no computador.
+Na pasta do projeto, execute:
 
-1. Clone o repositório ou baixe o ZIP e extraia os arquivos.
-2. Abra o terminal na pasta do projeto.
-3. Execute o comando:
+```bash
+python main.py
+```
 
-    python3 main.py
+O programa carrega os domínios de `urls.txt` e lê o conteúdo das páginas nos arquivos `.txt` dentro de `paginas/`.
 
-O arquivo `urls.txt` deve estar na mesma pasta do `main.py`. Depois de iniciar, digite uma URL cadastrada ou um dos comandos disponíveis.
+## Comandos
 
-## Arquivos do projeto
+| Comando | Função |
+|---|---|
+| endereço completo | Acessa um domínio ou página cadastrada |
+| `/caminho` | Acessa uma página interna a partir da página atual |
+| `#add <endereço>` | Cadastra um domínio ou página e solicita o conteúdo |
+| `#back` | Retorna à página anterior |
+| `#showhist` | Exibe o histórico |
+| `#help` | Exibe a ajuda |
+| `#sair` | Encerra o programa |
 
-- `main.py`: interface gráfica/terminal que exibe o estado da navegação (Histórico, Home e entradas) e gerencia o loop principal.
-- `cadastro_urls.py`: responsável por carregar o arquivo inicial, validar a sintaxe e cadastrar novas URLs na memória.
-- `historico.py`: implementação de uma **Pilha encadeada** usada para armazenar a sequência de páginas visitadas.
-- `navegador.py`: controla o estado da página atual (`Home`), realiza acessos a URLs e executa o retorno (`#back`).
-- `urls.txt`: banco inicial de endereços de sites cadastrados no sistema.
+## Estrutura dos arquivos
 
-## Comandos disponíveis
+- `main.py`: interface de terminal e interpretação dos comandos.
+- `cadastro_urls.py`: validação, cadastro e persistência dos endereços.
+- `estrutura_web.py`: árvore de domínios e páginas internas.
+- `navegador.py`: navegação, resolução de caminhos, leitura e exibição das páginas.
+- `historico.py`: pilha encadeada de páginas visitadas.
+- `urls.txt`: lista de domínios e páginas iniciais.
+- `paginas/`: conteúdo das páginas, um arquivo `index.txt` por endereço.
+- `testes/`: testes automatizados.
 
-- **Digitar uma URL**: acessa o endereço digitado (caso esteja cadastrado no sistema).
-- **`#add <url>`**: cadastra um novo endereço durante a execução.
-- **`#back`**: desempilha a última página visitada e retorna a ela.
-- **`#showhist`**: exibe o histórico de navegação completo na tela.
-- **`#sair`**: encerra a aplicação.
+## Como funciona a navegação interna
 
-## Funcionamento e Regras (Checkpoint 1)
+Depois de acessar `www.ifpb.edu.br`, digite `/cursos`. O navegador resolve o caminho para `www.ifpb.edu.br/cursos`. A partir dessa página, `/redes` resolve para `www.ifpb.edu.br/cursos/redes`.
 
-- **Simulação da Web:** O programa simula as requisições web locais sem realizar chamadas HTTP reais. As URLs válidas são carregadas inicialmente a partir do `urls.txt`.
-- **Interface e Exibição:** A tela principal exibe o `Histórico de Visitas: [...]` em ordem cronológica de acesso e a página `Home: [...]` atual, conforme os modelos do projeto.
-- **Tratamento de Erros:** Caso uma URL não cadastrada seja digitada, o programa exibe explicitamente o erro HTTP simulado (`Erro 404: Página não encontrada!`) e não altera a página atual nem o histórico de navegação.
-- **Pilha de Navegação:** O histórico armazena as páginas anteriores. Ao acessar uma nova URL válida, a página corrente vai para a pilha e a nova assume o valor do `Home`. Ao digitar `#back`, a URL do topo é desempilhada.
-- **Flexibilidade de Entrada:** A consulta tolera acessos com ou sem protocolo (`http://` ou `https://`), direcionando para o domínio equivalente.
+Os caminhos são acrescentados ao caminho da página atual. O comando `#back` retorna à página anterior.
 
-## Testes realizados
+## Cadastro de páginas
 
-- Leitura e povoamento automático das URLs a partir de `urls.txt`.
-- Tentativa de acesso a páginas cadastradas e exibição de `Erro 404: Página não encontrada!` para URLs não cadastradas.
-- Empilhamento e desempilhamento do histórico de páginas via `#back`.
-- Teste do comando `#add <url>` adicionando endereços dinamicamente.
-- Teste com histórico vazio ao iniciar e recusa de comandos inválidos.
+Use `#add www.exemplo.com/secao`. O programa solicita o texto da página, cria o arquivo correspondente dentro de `paginas/` e atualiza `urls.txt`. Os cadastros permanecem salvos para as próximas execuções.
+
+## Testes
+
+Execute:
+
+```bash
+python -m unittest discover -s testes -v
+```
+
+Os testes verificam o acesso ao domínio, navegação interna, leitura de arquivo, erro 404 sem alteração do estado e retorno pelo histórico.
+
+## Observações
+
+O projeto é um navegador simulado. Ele não acessa a internet nem interpreta HTML; cada página é representada por um arquivo de texto local.

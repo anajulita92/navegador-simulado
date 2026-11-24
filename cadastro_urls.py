@@ -1,73 +1,104 @@
+from pathlib import Path
+import re
+
+from estrutura_web import EstruturaWeb
+
+
 class CadastroURLs:
-    def __init__(self):
-        self.__urls = []
+    """Valida, cadastra e persiste domínios e páginas da web simulada."""
+
+    def __init__(self, diretorio_paginas="paginas", arquivo_urls="urls.txt"):
+        self.__estrutura = EstruturaWeb()
+        self.__urls = set()
+        self.__diretorio_paginas = Path(diretorio_paginas)
+        self.__arquivo_urls = Path(arquivo_urls)
 
     def normalizar_url(self, url):
-        """Remove protocolo e barra final para permitir busca simples/flexível."""
-        u = url.strip()
-        if u.startswith("http://"):
-            u = u[7:]
-        elif u.startswith("https://"):
-            u = u[8:]
-        return u.rstrip("/")
-
-    def esta_cadastrada(self, url):
-        norm_busca = self.normalizar_url(url)
-        for cadastrada in self.__urls:
-            if self.normalizar_url(cadastrada) == norm_busca or cadastrada == url:
-                return True
-        return False
+        dominio, caminhos = EstruturaWeb.separar_url(url)
+        return dominio + ("/" + "/".join(caminhos) if caminhos else "")
 
     def validar_url(self, url):
-        if not isinstance(url, str):
-            raise ValueError("A URL deve ser texto.")
-
-        url_limpa = url.strip()
-        if url_limpa == "":
-            raise ValueError("A URL não pode estar vazia.")
-
-        for caractere in url_limpa:
-            if caractere.isspace():
-                raise ValueError("A URL não pode conter espaços.")
-
-        endereco = self.normalizar_url(url_limpa)
-
-        if "?" in endereco or "#" in endereco:
-            raise ValueError("Não usamos parâmetros ou fragmentos nesta versão.")
-
-        dominio = endereco.split("/")[0]
+        dominio, caminhos = EstruturaWeb.separar_url(url)
         partes = dominio.split(".")
-
         if len(partes) < 2:
-            raise ValueError("O domínio deve ter partes separadas por ponto.")
+            raise ValueError("O domínio deve possuir partes separadas por ponto.")
 
         for parte in partes:
-            if parte == "":
-                raise ValueError("O domínio não pode ter partes vazias.")
-            if parte[0] == "-" or parte[-1] == "-":
-                raise ValueError("Uma parte do domínio não pode começar ou terminar com hífen.")
-            for caractere in parte:
-                if not (caractere.isascii() and caractere.isalnum()) and caractere != "-":
-                    raise ValueError("O domínio deve conter apenas letras e números.")
-
+            if not parte or parte.startswith("-") or parte.endswith("-"):
+                raise ValueError("Parte inválida no domínio.")
+            if not all(c.isascii() and (c.isalnum() or c == "-") for c in parte):
+                raise ValueError("O domínio contém caracteres inválidos.")
         return True
 
-    def adicionar(self, url):
-        self.validar_url(url)
-        if self.esta_cadastrada(url):
-            raise ValueError("A URL já está cadastrada.")
-        self.__urls.append(url.strip())
+    def _caminho_arquivo(self, url):
+        dominio, caminhos = EstruturaWeb.separar_url(url)
+        base = self.__diretorio_paginas / dominio
+        for parte in caminhos:
+            base = base / parte
+        return base / "index.txt"
 
-    def carregar_arquivo(self, caminho):
+    def esta_cadastrada(self, url):
         try:
-            with open(caminho, "r", encoding="utf-8") as arquivo:
-                for numero, linha in enumerate(arquivo, start=1):
-                    url = linha.strip()
-                    if url != "":
-                        try:
-                            self.adicionar(url)
-                        except ValueError as erro:
-                            # Se for aviso de duplicada, apenas ignora sem travar
-                            pass
-        except OSError as erro:
-            print(f"Não foi possível ler o arquivo: {erro}")
+            return self.__estrutura.buscar(url) is not None
+        except ValueError:
+            return False
+
+    def adicionar(self, url, conteudo="Página cadastrada no navegador simulado."):
+        self.validar_url(url)
+        normalizada = self.normalizar_url(url)
+
+        if normalizada in self.__urls:
+            raise ValueError("A URL já está cadastrada.")
+
+        arquivo = self._caminho_arquivo(normalizada)
+        arquivo.parent.mkdir(parents=True, exist_ok=True)
+        if arquivo.exists():
+            raise ValueError("Já existe um arquivo para essa página.")
+
+        arquivo.write_text(conteudo.rstrip() + "\n", encoding="utf-8")
+        self.__estrutura.cadastrar(normalizada, str(arquivo))
+        self.__urls.add(normalizada)
+        self._salvar_urls()
+        return normalizada
+
+    def carregar_arquivo(self, caminho=None):
+        origem = Path(caminho) if caminho else self.__arquivo_urls
+        if not origem.exists():
+            raise FileNotFoundError(f"Arquivo de URLs não encontrado: {origem}")
+
+        for numero, linha in enumerate(origem.read_text(encoding="utf-8").splitlines(), start=1):
+            url = linha.strip()
+            if not url or url.startswith("#"):
+                continue
+            try:
+                self.validar_url(url)
+                normalizada = self.normalizar_url(url)
+                if normalizada in self.__urls:
+                    continue
+
+                arquivo = self._caminho_arquivo(normalizada)
+                arquivo.parent.mkdir(parents=True, exist_ok=True)
+                if not arquivo.exists():
+                    arquivo.write_text(
+                        f"Bem-vindo à página simulada {normalizada}.\n",
+                        encoding="utf-8"
+                    )
+                self.__estrutura.cadastrar(normalizada, str(arquivo))
+                self.__urls.add(normalizada)
+            except ValueError as erro:
+                print(f"Linha {numero} ignorada em {origem}: {erro}")
+
+    def _salvar_urls(self):
+        self.__arquivo_urls.write_text(
+            "".join(url + "\n" for url in sorted(self.__urls)),
+            encoding="utf-8"
+        )
+
+    def obter_arquivo(self, url):
+        return self.__estrutura.obter_arquivo(url)
+
+    def obter_links(self, url):
+        return self.__estrutura.obter_links(url)
+
+    def listar_urls(self):
+        return sorted(self.__urls)

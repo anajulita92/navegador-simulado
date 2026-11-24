@@ -1,0 +1,3 @@
+Página inicial simulada do Google.
+
+Este navegador não realiza requisições HTTP reais. O conteúdo é lido de arquivos locais.

@@ -1,0 +1,4 @@
+Bem-vindo ao portal simulado do IFPB.
+
+Este é o domínio inicial utilizado como exemplo no navegador simulado.
+Acesse /cursos para consultar os cursos disponíveis.

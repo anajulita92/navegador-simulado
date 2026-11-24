@@ -5,12 +5,13 @@ class No:
 
 
 class Historico:
+    """Pilha encadeada: o último endereço empilhado é o primeiro removido."""
+
     def __init__(self):
         self.__topo = None
 
     def empilhar(self, url):
-        novo_no = No(url, self.__topo)
-        self.__topo = novo_no
+        self.__topo = No(url, self.__topo)
 
     def desempilhar(self):
         if self.__topo is None:
@@ -20,7 +21,6 @@ class Historico:
         return url
 
     def listar_cronologico(self):
-        # Percorre a pilha e inverte para exibir do mais antigo ao mais recente
         urls = []
         atual = self.__topo
         while atual is not None:

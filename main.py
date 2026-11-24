@@ -1,68 +1,102 @@
 from cadastro_urls import CadastroURLs
 from navegador import Navegador
 
+
 def exibir_interface(navegador):
-    hist_str = navegador.obter_historico_formatado()
-    home_str = f"[{navegador.pagina_atual}]" if navegador.pagina_atual else "[]"
-    
-    print("-" * 50)
-    print(f"Histórico de Visitas: {hist_str if hist_str else '[]'}")
-    print(f"Home: {home_str}")
-    print("Digite a url ou #back para retornar à última página visitada.")
+    historico = navegador.obter_historico_formatado()
+    pagina = navegador.pagina_atual or "Nenhuma página acessada"
+
+    print("\n" + "=" * 60)
+    print(f"Histórico de visitas: {historico or '[]'}")
+    print(f"Página atual: {pagina}")
+    print("=" * 60)
+
+
+def exibir_ajuda():
+    print("""
+COMANDOS DO NAVEGADOR SIMULADO
+
+  endereço completo       Acessa um domínio ou página cadastrada.
+  /caminho                Acessa uma página interna do domínio atual.
+  #add <endereço>         Cadastra um domínio ou página interna.
+  #back                   Volta à página anterior.
+  #showhist               Exibe o histórico de navegação.
+  #help                   Exibe esta ajuda.
+  #sair                   Encerra o navegador.
+
+Exemplo:
+  www.ifpb.edu.br
+  /cursos
+  /redes
+""")
+
 
 def main():
     cadastro = CadastroURLs()
     cadastro.carregar_arquivo("urls.txt")
     navegador = Navegador(cadastro)
 
-    mensagem_status = None
+    print("NAVEGADOR SIMULADO - CHECKPOINT 2")
+    print("Digite #help para consultar os comandos.")
 
     while True:
         exibir_interface(navegador)
-        
-        if mensagem_status:
-            print()
-            print(mensagem_status)
-            mensagem_status = None
 
-        entrada = input("url: ").strip()
+        try:
+            entrada = input("url: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nEncerrando o navegador...")
+            break
 
-        if entrada == "":
+        if not entrada:
             continue
 
         if entrada == "#sair":
             print("Encerrando o navegador...")
             break
 
-        elif entrada == "#back":
-            pagina = navegador.voltar()
-            if pagina is None:
-                mensagem_status = "Não há páginas anteriores no histórico."
+        if entrada == "#help":
+            exibir_ajuda()
+            continue
 
-        elif entrada == "#showhist":
-            hist = navegador.obter_historico_formatado()
-            print(f"\nHistórico: {hist if hist else '[]'}\n")
+        if entrada == "#showhist":
+            print("Histórico:", navegador.obter_historico_formatado() or "[]")
+            continue
 
-        elif entrada.startswith("#add"):
-            nova_url = entrada[4:].strip()
-            if nova_url == "":
-                mensagem_status = "Erro: Use o formato #add <url>"
+        if entrada == "#back":
+            anterior = navegador.voltar()
+            if anterior is None:
+                print("Não há páginas anteriores no histórico.")
             else:
-                try:
-                    cadastro.adicionar(nova_url)
-                    mensagem_status = f"URL '{nova_url}' cadastrada com sucesso!"
-                except ValueError as erro:
-                    mensagem_status = f"Erro ao cadastrar: {erro}"
+                print(f"Retornou para: {anterior}")
+                navegador.exibir_pagina_atual()
+            continue
 
-        elif entrada.startswith("#"):
-            mensagem_status = "Comando desconhecido."
+        if entrada.startswith("#add"):
+            endereco = entrada[4:].strip()
+            if not endereco:
+                print("Uso: #add <endereço>")
+                continue
 
-        else:
             try:
-                navegador.acessar(entrada)
-                mensagem_status = "Página encontrada!"
-            except ValueError as erro:
-                mensagem_status = str(erro)
+                conteudo = input("Conteúdo da nova página: ")
+                pagina = cadastro.adicionar(endereco, conteudo)
+                print(f"Página cadastrada com sucesso: {pagina}")
+            except (ValueError, OSError) as erro:
+                print(f"Erro ao cadastrar: {erro}")
+            continue
+
+        if entrada.startswith("#"):
+            print("Comando desconhecido. Digite #help para ver os comandos.")
+            continue
+
+        try:
+            pagina = navegador.acessar(entrada)
+            print(f"Página encontrada: {pagina}")
+            navegador.exibir_pagina_atual()
+        except (ValueError, OSError) as erro:
+            print(erro)
+
 
 if __name__ == "__main__":
     main()
